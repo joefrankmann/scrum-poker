@@ -6,6 +6,8 @@
         <title>Scrum Poker - Team Estimation Tool</title>
         <!-- Include Socket.IO client library -->
         <script src="/socket.io/socket.io.js"></script>
+        <!-- Canvas Confetti library -->
+        <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
         <style>
     :root {
       --primary: #2563eb;
@@ -708,6 +710,13 @@
         <div class="toast-container" id="toastContainer"></div>
         <script>
 document.addEventListener('DOMContentLoaded', function() {
+// Preload the confetti library for when we need it
+if (typeof window.confetti === 'undefined') {
+    console.log('Preloading confetti library');
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js';
+    document.head.appendChild(script);
+}
 // Connect to Socket.IO server
 const socket = io();
 // State
@@ -883,6 +892,11 @@ updateVotesList();
 updateVoteDistribution();
 calculateStats();
 revealVotesBtn.disabled = true;
+
+// Check for consensus in T-shirt size mode
+if (state.currentSequence === 'tshirt') {
+    checkConsensusAndCelebrate();
+}
 });
 socket.on('voting_reset', (data) => {
 console.log('Voting reset by:', data.resetBy);
@@ -936,6 +950,11 @@ updateStatsVisibility();
 // Show notification
 const changer = data.changedBy === state.username ? 'You' : data.changedBy;
 showToast(`${changer} changed card sequence to ${data.cardSequence}`, 'info');
+
+// Check for consensus if switching to T-shirt mode and votes are already revealed
+if (data.cardSequence === 'tshirt' && state.votesRevealed) {
+    checkConsensusAndCelebrate();
+}
 }
 });
 socket.on('sync_state', (data) => {
@@ -1550,6 +1569,102 @@ mode = vote;
 }
 modeValueEl.textContent = mode;
 }
+
+// Function to check for consensus and celebrate with confetti
+function checkConsensusAndCelebrate() {
+    // Only proceed if votes are revealed and we're in T-shirt size mode
+    if (!state.votesRevealed || state.currentSequence !== 'tshirt') return;
+    
+    // Get all votes (excluding observers who don't vote)
+    const votes = [];
+    for (const username in state.votes) {
+        // Only count votes that aren't null or undefined or "?"
+        if (state.votes[username] && state.votes[username] !== '?') {
+            votes.push(state.votes[username]);
+        }
+    }
+    
+    // Need at least 2 votes to consider consensus
+    if (votes.length < 2) return;
+    
+    // Check if all votes are the same
+    const firstVote = votes[0];
+    const allSame = votes.every(vote => vote === firstVote);
+    
+    if (allSame) {
+        // Trigger confetti celebration
+        celebrateWithConfetti();
+        // Show a celebratory message
+        showToast(`🎉 Perfect consensus! Everyone voted for ${firstVote}!`, 'success', 8000);
+    }
+}
+
+// Function to display confetti animation
+function celebrateWithConfetti() {
+    // Check if confetti is available
+    if (typeof window.confetti === 'undefined') {
+        console.error('Confetti library not loaded');
+        // Try to load the confetti library again
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js';
+        script.onload = () => {
+            console.log('Confetti library loaded dynamically');
+            // Now that it's loaded, run the confetti
+            runConfettiAnimation();
+        };
+        script.onerror = () => {
+            console.error('Failed to load confetti library dynamically');
+        };
+        document.head.appendChild(script);
+        return;
+    }
+    
+    runConfettiAnimation();
+}
+
+// Separate function to run the actual confetti animation
+function runConfettiAnimation() {
+    // Configure and trigger the confetti
+    const duration = 0.5 * 1000;
+    const end = Date.now() + duration;
+    
+    // Create a confetti cannon effect
+    const frame = () => {
+        if (typeof window.confetti === 'function') {
+            window.confetti({
+                particleCount: 2,
+                angle: 60,
+                spread: 55,
+                origin: { x: 0 },
+                colors: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6']
+            });
+            window.confetti({
+                particleCount: 2,
+                angle: 120,
+                spread: 55,
+                origin: { x: 1 },
+                colors: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6']
+            });
+            
+            if (Date.now() < end) {
+                requestAnimationFrame(frame);
+            }
+        }
+    };
+    
+    // Start the animation
+    frame();
+    
+    // Add a big burst of confetti at the start
+    if (typeof window.confetti === 'function') {
+        window.confetti({
+            particleCount: 100,
+            spread: 70,
+            origin: { y: 0.6 }
+        });
+    }
+}
+
 // Show toast notification
 function showToast(message, type = 'info', duration = 5000) {
 const toastContainer = document.getElementById('toastContainer');
