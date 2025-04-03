@@ -1,0 +1,1761 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Scrum Poker - Team Estimation Tool</title>
+        <!-- Include Socket.IO client library -->
+        <script src="/socket.io/socket.io.js"></script>
+        <!-- Canvas Confetti library -->
+        <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+        <style>
+    :root {
+      --primary: #2563eb;
+      --primary-light: #3b82f6;
+      --primary-dark: #1d4ed8;
+      --background: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #1e293b;
+      --text-light: #64748b;
+      --border: #e2e8f0;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --observer: #8b5cf6; /* Purple for observer role */
+    }
+    
+    /* Animation keyframes */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @keyframes fadeOut {
+      from { opacity: 1; transform: translateY(0); }
+      to { opacity: 0; transform: translateY(10px); }
+    }
+    
+    @keyframes flipIn {
+      0% { transform: rotateY(90deg); opacity: 0; }
+      100% { transform: rotateY(0deg); opacity: 1; }
+    }
+    
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+    
+    @keyframes fadeHighlight {
+      0% { background-color: rgba(16, 185, 129, 0.3); }
+      100% { background-color: transparent; }
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    }
+
+    body {
+      background-color: var(--background);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 1rem;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 2rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    h1 {
+      font-size: 2rem;
+      color: var(--primary);
+      margin-bottom: 0.5rem;
+    }
+
+    .subtitle {
+      color: var(--text-light);
+      font-size: 1rem;
+    }
+
+    .voting-area {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+      margin-bottom: 2rem;
+    }
+
+    .card-deck {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      justify-content: center;
+    }
+
+    .card {
+      width: 80px;
+      height: 120px;
+      background-color: var(--card-bg);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      transition: transform 0.2s, box-shadow 0.2s;
+      border: 2px solid var(--border);
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 5px 10px rgba(0, 0, 0, 0.15);
+    }
+
+    .card.selected {
+      border-color: var(--primary);
+      transform: translateY(-5px);
+      box-shadow: 0 5px 10px rgba(0, 0, 0, 0.15);
+      background-color: var(--primary-light);
+      color: white;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      justify-content: center;
+      margin-bottom: 2rem;
+    }
+
+    button {
+      padding: 0.75rem 1.5rem;
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: background-color 0.2s;
+    }
+
+    button:hover {
+      background-color: var(--primary-dark);
+    }
+
+    button:disabled {
+      background-color: var(--text-light);
+      cursor: not-allowed;
+    }
+
+    button.secondary {
+      background-color: var(--background);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    button.secondary:hover {
+      background-color: var(--border);
+    }
+
+    .results {
+      padding: 1rem;
+      background-color: var(--card-bg);
+      border-radius: 8px;
+      margin-bottom: 2rem;
+      border: 1px solid var(--border);
+    }
+
+    .results h3 {
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .results-summary {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 2rem;
+      margin-bottom: 1rem;
+      justify-content: space-around;
+    }
+
+    .result-item {
+      text-align: center;
+    }
+
+    .result-item .value {
+      font-size: 2rem;
+      font-weight: bold;
+      color: var(--primary);
+    }
+
+    .result-item .label {
+      font-size: 0.875rem;
+      color: var(--text-light);
+    }
+
+    .votes-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .vote-card {
+      background-color: var(--background);
+      padding: 1rem;
+      border-radius: 4px;
+      text-align: center;
+      min-width: 100px;
+    }
+
+    .vote-card .value {
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
+
+    .vote-card .name {
+      font-size: 0.875rem;
+      color: var(--text-light);
+    }
+    
+    /* Vote distribution bar */
+    .vote-distribution {
+      margin-top: 1.5rem;
+    }
+    
+    .distribution-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+    
+    .distribution-card {
+      width: 2.5rem;
+      background-color: var(--primary-light);
+      color: white;
+      padding: 0.25rem;
+      border-radius: 4px;
+      font-weight: bold;
+      text-align: center;
+      margin-right: 0.5rem;
+    }
+    
+    .distribution-count {
+      font-weight: bold;
+      margin-right: 0.5rem;
+    }
+    
+    .distribution-bar {
+      height: 1rem;
+      background-color: var(--primary-light);
+      border-radius: 4px;
+      opacity: 0.8;
+      min-width: 2rem;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    @media (max-width: 768px) {
+      .card {
+        width: 60px;
+        height: 90px;
+        font-size: 1.25rem;
+      }
+      
+      .controls {
+        flex-direction: column;
+      }
+      
+      button {
+        width: 100%;
+      }
+    }
+
+    .sequence-selector {
+      margin-bottom: 1.5rem;
+      text-align: center;
+    }
+
+    .sequence-selector select {
+      padding: 0.5rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      margin-left: 0.5rem;
+      font-size: 1rem;
+    }
+
+    .participants-list {
+      margin-top: 1rem;
+      padding: 1rem;
+      background-color: var(--card-bg);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+
+    .participants-list h3 {
+      margin-bottom: 0.5rem;
+    }
+
+    .participant {
+      padding: 0.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .participant:last-child {
+      border-bottom: none;
+    }
+
+    .participant-status {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background-color: var(--danger);
+      margin-right: 1rem;
+    }
+
+    .participant-status.voted {
+      background-color: var(--success);
+      animation: pulse 1s infinite;
+    }
+
+    .status-indicator {
+      display: flex;
+      align-items: center;
+    }
+    
+    /* Participant vote badge */
+    .participant-vote {
+      background-color: var(--primary-light);
+      color: white;
+      font-size: 0.8rem;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      margin-left: 0.5rem;
+    }
+
+    /* Room join screen */
+    .join-container {
+      max-width: 500px;
+      margin: 0 auto;
+      padding: 2rem;
+      background-color: var(--card-bg);
+      border-radius: 8px;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      animation: fadeIn 0.5s;
+    }
+
+    .join-container h2 {
+      color: var(--primary);
+      margin-bottom: 1.5rem;
+      text-align: center;
+    }
+
+    .join-container .room-info {
+      margin-bottom: 1.5rem;
+      padding: 1rem;
+      background-color: var(--background);
+      border-radius: 4px;
+      border-left: 4px solid var(--primary);
+    }
+
+    .input-group {
+      margin-bottom: 1.5rem;
+    }
+
+    .input-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+    }
+
+    .input-group input {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 1rem;
+    }
+
+    .input-group input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    /* Gray out session code input to make it look more optional */
+    .input-group.optional label {
+      color: var(--text-light);
+    }
+
+    .input-group.optional input {
+      background-color: #f9fafb;
+      border-color: #e5e7eb;
+    }
+
+    /* Checkbox styles */
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .checkbox-group input[type="checkbox"] {
+      width: auto;
+      margin-right: 0.5rem;
+    }
+
+    .join-btn {
+      width: 100%;
+      padding: 0.75rem;
+      background-color: var(--primary);
+      color: white;
+      font-size: 1rem;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    .join-btn:hover {
+      background-color: var(--primary-dark);
+    }
+
+    /* Toast notifications */
+    .toast-container {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 1000;
+    }
+
+    .toast {
+      padding: 1rem;
+      margin-bottom: 0.5rem;
+      background-color: white;
+      border-radius: 4px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      animation: fadeIn 0.3s;
+      max-width: 300px;
+    }
+
+    .toast.info {
+      border-left: 4px solid var(--primary);
+    }
+
+    .toast.success {
+      border-left: 4px solid var(--success);
+    }
+
+    .toast.warning {
+      border-left: 4px solid var(--warning);
+    }
+
+    .toast.error {
+      border-left: 4px solid var(--danger);
+    }
+
+    .toast-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+
+    .toast-title {
+      font-weight: 500;
+    }
+
+    .toast-close {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 1.2rem;
+      color: var(--text-light);
+      padding: 0;
+    }
+
+    .room-code {
+      font-weight: bold;
+      font-size: 1.5rem;
+      color: var(--primary);
+      text-align: center;
+      margin-bottom: 1rem;
+      background-color: var(--background);
+      padding: 0.5rem;
+      border-radius: 4px;
+    }
+
+    .share-links {
+      text-align: center;
+      margin-top: 2rem;
+      padding: 1rem;
+      background-color: var(--background);
+      border-radius: 8px;
+    }
+    
+    .share-links h4 {
+      margin-bottom: 0.5rem;
+      color: var(--primary);
+    }
+    
+    .share-link {
+      margin-bottom: 0.5rem;
+    }
+
+    .share-link a {
+      color: var(--primary);
+      text-decoration: none;
+      word-break: break-all;
+    }
+
+    .copy-btn {
+      background-color: var(--background);
+      border: 1px solid var(--border);
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.875rem;
+      margin-left: 0.5rem;
+    }
+
+    .copy-btn:hover {
+      background-color: var(--border);
+    }
+    
+    /* New participant animation */
+    .participant-enter {
+      background-color: rgba(16, 185, 129, 0.1); /* Light green highlight */
+      animation: fadeHighlight 2s ease-out;
+    }
+    
+    /* Connection status */
+    .connection-status {
+      position: fixed;
+      bottom: 10px;
+      left: 10px;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      z-index: 1000;
+    }
+    
+    .connection-status.connected {
+      background-color: var(--success);
+      color: white;
+    }
+    
+    .connection-status.disconnected {
+      background-color: var(--danger);
+      color: white;
+    }
+    
+    .connection-status.reconnecting {
+      background-color: var(--warning);
+      color: white;
+    }
+    
+    /* Observer badge styles */
+    .observer-badge {
+      background-color: var(--observer);
+      color: white;
+      font-size: 0.7rem;
+      padding: 0.2rem 0.5rem;
+      border-radius: 9999px;
+      margin-left: 0.5rem;
+      text-transform: uppercase;
+      font-weight: bold;
+    }
+    
+    .user-role {
+      display: flex;
+      align-items: center;
+    }
+    
+    /* Player badge - only shown when observer is present */
+    .player-badge {
+      background-color: var(--primary);
+      color: white;
+      font-size: 0.7rem;
+      padding: 0.2rem 0.5rem;
+      border-radius: 9999px;
+      margin-left: 0.5rem;
+      text-transform: uppercase;
+      font-weight: bold;
+    }
+    
+    /* Role info in header */
+    .role-info {
+      margin-top: 0.5rem;
+      display: inline-block;
+      padding: 0.2rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      font-weight: bold;
+    }
+    
+    .role-info.observer {
+      background-color: var(--observer);
+      color: white;
+    }
+    
+    .role-info.player {
+      background-color: var(--primary);
+      color: white;
+    }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <header>
+                <h1>Scrum Poker</h1>
+                <p class="subtitle">Collaborative Estimation Tool for Agile Teams</p>
+                <div id="roleDisplay"></div>
+            </header>
+            <div id="connectionStatus" class="connection-status"></div>
+            <div id="joinRoom" class="join-container">
+                <h2>Join a Planning Poker Session</h2>
+                <div class="room-info">
+                    <p>Enter your name and a session code to join.</p>
+                    <p>If you don't have a session code, one will be created for you.</p>
+                </div>
+                <div class="input-group">
+                    <label for="nameInput">Your Name</label>
+                    <input type="text" id="nameInput" placeholder="Enter your name" required>
+                </div>
+                <div class="input-group optional">
+                    <label for="roomCodeInput">Session Code (Optional)</label>
+                    <input type="text"
+                           id="roomCodeInput"
+                           placeholder="Leave empty to create a new session">
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="observerRole" name="observerRole">
+                    <label for="observerRole">Join as observer (can reveal cards but not vote)</label>
+                </div>
+                <button id="joinSession" class="join-btn">Join Session</button>
+            </div>
+            <div id="mainContent" class="hidden">
+                <div class="room-code" id="roomCodeDisplay"></div>
+                <div class="sequence-selector" id="sequenceSelector">
+                    <label for="cardSequence">Card Sequence:</label>
+                    <select id="cardSequence">
+                        <option value="fibonacci">Fibonacci (1, 2, 3, 5, 8, 13, 21, 34, 55, 89)</option>
+                        <option value="modified">Modified Fibonacci (0, ½, 1, 2, 3, 5, 8, 13, 20, 40, 100)</option>
+                        <option value="tshirt">T-Shirt Sizes (XS, S, M, L, XL, XXL)</option>
+                        <option value="powers">Powers of 2 (1, 2, 4, 8, 16, 32, 64)</option>
+                    </select>
+                </div>
+                <div class="participants-list">
+                    <h3>Participants (0)</h3>
+                    <div id="participants"></div>
+                </div>
+                <div id="votingSection" class="voting-area">
+                    <h3>Select Your Estimate</h3>
+                    <div class="card-deck" id="cardDeck"></div>
+                </div>
+                <div class="controls">
+                    <button id="submitVote" disabled>Submit Vote</button>
+                    <button id="revealVotes" disabled>Reveal Votes</button>
+                    <button id="resetVoting" class="secondary">Reset Voting</button>
+                </div>
+                <div class="results" id="resultsArea">
+                    <h3>Voting Results</h3>
+                    <div class="results-summary" id="resultsSummary">
+                        <div class="result-item">
+                            <div class="label">Average</div>
+                            <div class="value" id="averageValue">-</div>
+                        </div>
+                        <div class="result-item">
+                            <div class="label">Median</div>
+                            <div class="value" id="medianValue">-</div>
+                        </div>
+                        <div class="result-item">
+                            <div class="label">Mode</div>
+                            <div class="value" id="modeValue">-</div>
+                        </div>
+                    </div>
+                    <!-- Vote distribution will show here -->
+                    <div id="voteDistribution" class="vote-distribution"></div>
+                    <h4>Individual Votes (0)</h4>
+                    <div class="votes-list" id="votesList"></div>
+                </div>
+                <!-- Moved share links to bottom of page -->
+                <div id="shareLinksContainer" class="share-links">
+                    <h4>Share this Session</h4>
+                    <div class="share-link">
+                        <a href="#" id="sessionShareLink" target="_blank"></a>
+                        <button class="copy-btn" data-link="session">Copy</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="toast-container" id="toastContainer"></div>
+        <script>
+document.addEventListener('DOMContentLoaded', function() {
+// Preload the confetti library for when we need it
+if (typeof window.confetti === 'undefined') {
+    console.log('Preloading confetti library');
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js';
+    document.head.appendChild(script);
+}
+// Connect to Socket.IO server
+const socket = io();
+// State
+const state = {
+username: '',
+roomId: '',
+role: 'player', // Default role is player
+selectedCard: null,
+votes: {},
+votesRevealed: false,
+participants: {},
+voteDistribution: {}, // To store count of each vote
+cardSequences: {
+fibonacci: ['1', '2', '3', '5', '8', '13', '21', '34', '55', '89', '?'],
+modified: ['0', '½', '1', '2', '3', '5', '8', '13', '20', '40', '100', '?'],
+tshirt: ['XS', 'S', 'M', 'L', 'XL', 'XXL', '?'],
+powers: ['1', '2', '4', '8', '16', '32', '64', '?']
+},
+currentSequence: 'fibonacci',
+connected: false
+};
+// DOM Elements
+const joinRoomSection = document.getElementById('joinRoom');
+const mainContent = document.getElementById('mainContent');
+const nameInput = document.getElementById('nameInput');
+const roomCodeInput = document.getElementById('roomCodeInput');
+const observerRoleCheckbox = document.getElementById('observerRole');
+const roomCodeDisplay = document.getElementById('roomCodeDisplay');
+const connectionStatus = document.getElementById('connectionStatus');
+const shareLinksContainer = document.getElementById('shareLinksContainer');
+const sessionShareLink = document.getElementById('sessionShareLink');
+const joinSessionBtn = document.getElementById('joinSession');
+const cardDeck = document.getElementById('cardDeck');
+const cardSequenceSelect = document.getElementById('cardSequence');
+const sequenceSelector = document.getElementById('sequenceSelector');
+const submitVoteBtn = document.getElementById('submitVote');
+const revealVotesBtn = document.getElementById('revealVotes');
+const resetVotingBtn = document.getElementById('resetVoting');
+const votingSection = document.getElementById('votingSection');
+const roleDisplay = document.getElementById('roleDisplay');
+const participantsList = document.getElementById('participants');
+const votesList = document.getElementById('votesList');
+const resultsSummary = document.getElementById('resultsSummary');
+const voteDistribution = document.getElementById('voteDistribution');
+const averageValueEl = document.getElementById('averageValue');
+const medianValueEl = document.getElementById('medianValue');
+const modeValueEl = document.getElementById('modeValue');
+// Initialize
+loadFromLocalStorage();
+checkUrlForRoomCode();
+// Update connection status
+updateConnectionStatus('connecting');
+// Socket.IO Event Listeners
+socket.on('connect', () => {
+console.log('Connected to server');
+updateConnectionStatus('connected');
+state.connected = true;
+// If we were previously in a room, rejoin it
+if (state.username && state.roomId) {
+socket.emit('join_room', {
+username: state.username,
+roomId: state.roomId,
+role: state.role
+});
+}
+});
+socket.on('disconnect', () => {
+console.log('Disconnected from server');
+updateConnectionStatus('disconnected');
+state.connected = false;
+});
+socket.on('connect_error', (error) => {
+console.error('Connection error:', error);
+updateConnectionStatus('error');
+});
+socket.on('error_message', (data) => {
+showToast(data.message, 'error');
+});
+socket.on('user_joined', (data) => {
+console.log('User joined:', data.username, 'as', data.role || 'player');
+// Update our participants list with the one from the server
+if (data.participants) {
+state.participants = data.participants;
+} else {
+// Just add the new user if full participant list wasn't provided
+state.participants[data.username] = {
+name: data.username,
+hasVoted: false,
+isActive: true,
+role: data.role || 'player',
+vote: null
+};
+}
+// Show notification for others joining
+if (data.username !== state.username) {
+const roleText = data.role === 'observer' ? 'observer' : 'player';
+showToast(`${data.username} has joined the session as ${roleText}`, 'info');
+}
+// Update UI
+updateParticipantsList(data.username);
+});
+socket.on('user_left', (data) => {
+console.log('User left:', data.username);
+// If full participants list is provided, use it
+if (data.participants) {
+state.participants = data.participants;
+} else {
+// Otherwise just remove the user who left
+delete state.participants[data.username];
+delete state.votes[data.username];
+}
+showToast(`${data.username} has left the session`, 'warning');
+// Update UI
+updateParticipantsList();
+updateVotesList();
+checkAllVoted();
+});
+socket.on('vote_submitted', (data) => {
+console.log('Vote submitted by:', data.username);
+// Update participants if provided
+if (data.participants) {
+state.participants = data.participants;
+} else {
+// Just update the specific participant
+if (!state.participants[data.username]) {
+state.participants[data.username] = {
+name: data.username,
+hasVoted: true,
+isActive: true,
+role: 'player', // Assume player since only players can vote
+vote: null
+};
+} else {
+state.participants[data.username].hasVoted = true;
+}
+}
+// Update votes if provided
+if (data.votes) {
+state.votes = data.votes;
+} else {
+// We'll set the vote to null since we don't know it yet
+// It will be revealed later
+state.votes[data.username] = null;
+}
+// Show notification for others' votes
+if (data.username !== state.username) {
+showToast(`${data.username} has voted`, 'info');
+}
+// Update UI
+updateParticipantsList();
+updateVotesList();
+checkAllVoted();
+});
+socket.on('votes_revealed', (data) => {
+console.log('Votes revealed by:', data.revealedBy);
+state.votesRevealed = true;
+// Update votes if provided
+if (data.votes) {
+state.votes = data.votes;
+}
+// Update vote distribution
+if (data.voteDistribution) {
+state.voteDistribution = data.voteDistribution;
+} else {
+// Calculate distribution locally if server didn't provide it
+calculateVoteDistribution();
+}
+// Show who revealed the votes
+const revealer = data.revealedBy === state.username ? 'You' : data.revealedBy;
+showToast(`${revealer} revealed the votes!`, 'success');
+// Update UI
+updateVotesList();
+updateVoteDistribution();
+calculateStats();
+revealVotesBtn.disabled = true;
+
+// Check for consensus in T-shirt size mode
+if (state.currentSequence === 'tshirt') {
+    checkConsensusAndCelebrate();
+}
+});
+socket.on('voting_reset', (data) => {
+console.log('Voting reset by:', data.resetBy);
+state.votesRevealed = false;
+state.votes = {};
+state.voteDistribution = {};
+state.selectedCard = null;
+// Update participants if provided
+if (data.participants) {
+state.participants = data.participants;
+} else {
+// Reset voting status locally
+Object.keys(state.participants).forEach(name => {
+if (state.participants[name]) {
+state.participants[name].hasVoted = false;
+state.participants[name].vote = null;
+}
+});
+}
+// Show who reset the voting
+const resetter = data.resetBy === state.username ? 'You' : data.resetBy;
+showToast(`${resetter} reset the voting`, 'info');
+// Update UI
+renderCardDeck();
+updateVotesList();
+updateVoteDistribution();
+updateParticipantsList();
+checkAllVoted();
+// Reset buttons
+submitVoteBtn.disabled = true;
+revealVotesBtn.disabled = true;
+// Reset stats
+averageValueEl.textContent = '-';
+medianValueEl.textContent = '-';
+modeValueEl.textContent = '-';
+// Remove selection feedback if exists
+const existingFeedback = document.querySelector('.selection-feedback');
+if (existingFeedback) {
+existingFeedback.remove();
+}
+});
+socket.on('sequence_changed', (data) => {
+console.log('Card sequence changed to:', data.cardSequence, 'by:', data.changedBy);
+if (data.cardSequence && state.cardSequences[data.cardSequence]) {
+state.currentSequence = data.cardSequence;
+cardSequenceSelect.value = data.cardSequence;
+// Re-render cards
+renderCardDeck();
+// Update display of stats based on sequence type
+updateStatsVisibility();
+// Show notification
+const changer = data.changedBy === state.username ? 'You' : data.changedBy;
+showToast(`${changer} changed card sequence to ${data.cardSequence}`, 'info');
+
+// Check for consensus if switching to T-shirt mode and votes are already revealed
+if (data.cardSequence === 'tshirt' && state.votesRevealed) {
+    checkConsensusAndCelebrate();
+}
+}
+});
+socket.on('sync_state', (data) => {
+console.log('Received state sync:', data);
+// Update entire state from server
+if (data.participants) {
+state.participants = data.participants;
+}
+if (data.votes) {
+state.votes = data.votes;
+}
+state.votesRevealed = data.votesRevealed || false;
+if (data.cardSequence && state.cardSequences[data.cardSequence]) {
+state.currentSequence = data.cardSequence;
+cardSequenceSelect.value = data.cardSequence;
+}
+// Update UI
+renderCardDeck();
+updateParticipantsList();
+updateVotesList();
+updateStatsVisibility();
+if (state.votesRevealed) {
+calculateVoteDistribution();
+updateVoteDistribution();
+calculateStats();
+revealVotesBtn.disabled = true;
+} else {
+checkAllVoted();
+}
+// Update UI based on role
+updateUIForRole();
+});
+// UI Event Listeners
+joinSessionBtn.addEventListener('click', joinSession);
+cardSequenceSelect.addEventListener('change', handleCardSequenceChange);
+submitVoteBtn.addEventListener('click', submitVote);
+revealVotesBtn.addEventListener('click', revealVotes);
+resetVotingBtn.addEventListener('click', resetVoting);
+// Add event listeners to copy buttons
+document.querySelectorAll('.copy-btn').forEach(button => {
+button.addEventListener('click', function() {
+const linkType = this.getAttribute('data-link');
+copyShareLink(linkType);
+});
+});
+// Event listener for observer role checkbox
+observerRoleCheckbox.addEventListener('change', function() {
+// Update tooltip with role description
+if (this.checked) {
+this.parentElement.setAttribute('title', 'Observers can see votes and reveal cards but cannot vote themselves');
+} else {
+this.parentElement.setAttribute('title', '');
+}
+});
+// Check URL for room code
+function checkUrlForRoomCode() {
+const urlParams = new URLSearchParams(window.location.search);
+const roomCode = urlParams.get('room');
+if (roomCode) {
+roomCodeInput.value = roomCode;
+// Focus on name input for convenience
+nameInput.focus();
+// Check for role in URL
+const role = urlParams.get('role');
+if (role === 'observer') {
+observerRoleCheckbox.checked = true;
+}
+}
+}
+// Calculate vote distribution locally
+function calculateVoteDistribution() {
+const distribution = {};
+Object.values(state.votes).forEach(vote => {
+if (!vote) return; // Skip null/undefined votes
+if (!distribution[vote]) {
+distribution[vote] = 1;
+} else {
+distribution[vote]++;
+}
+});
+state.voteDistribution = distribution;
+}
+// Update vote distribution display
+function updateVoteDistribution() {
+if (!voteDistribution) return;
+voteDistribution.innerHTML = '';
+if (!state.votesRevealed) {
+voteDistribution.innerHTML = `
+<p>Votes will be displayed here when revealed.</p>
+`;
+return;
+}
+// If no votes, show message
+if (Object.keys(state.voteDistribution).length === 0) {
+voteDistribution.innerHTML = `
+<p>No votes yet.</p>
+`;
+return;
+}
+// Get total number of votes for calculating percentage
+const totalVotes = Object.values(state.voteDistribution).reduce((sum, count) => sum + count, 0);
+// Sort by card value (try numeric sort first)
+const sortedCards = Object.keys(state.voteDistribution).sort((a, b) => {
+// Special handling for T-shirt sizes
+if (state.currentSequence === 'tshirt') {
+const sizeOrder = { 'XS': 1, 'S': 2, 'M': 3, 'L': 4, 'XL': 5, 'XXL': 6, '?': 7 };
+return sizeOrder[a] - sizeOrder[b];
+}
+// Handle special case for '½'
+if (a === '½') return -0.5;
+if (b === '½') return 0.5;
+// Handle '?' at the end
+if (a === '?') return 1;
+if (b === '?') return -1;
+// Try numeric sort
+const numA = parseFloat(a);
+const numB = parseFloat(b);
+if (!isNaN(numA) && !isNaN(numB)) {
+return numA - numB;
+}
+// Fallback to string comparison
+return a.localeCompare(b);
+});
+// Create a bar for each vote option
+sortedCards.forEach(card => {
+const count = state.voteDistribution[card];
+const percentage = Math.round((count / totalVotes) * 100);
+const item = document.createElement('div');
+item.className = 'distribution-item';
+const cardEl = document.createElement('div');
+cardEl.className = 'distribution-card';
+cardEl.textContent = card;
+const countEl = document.createElement('div');
+countEl.className = 'distribution-count';
+countEl.textContent = `${count} vote${count !== 1 ? 's' : ''} (${percentage}%)`;
+const barEl = document.createElement('div');
+barEl.className = 'distribution-bar';
+barEl.style.width = `${percentage * 3}px`; // Scale the bar width
+item.appendChild(cardEl);
+item.appendChild(countEl);
+item.appendChild(barEl);
+voteDistribution.appendChild(item);
+});
+}
+// Update connection status display
+function updateConnectionStatus(status) {
+if (!connectionStatus) return;
+connectionStatus.className = 'connection-status';
+switch (status) {
+case 'connected':
+connectionStatus.classList.add('connected');
+connectionStatus.textContent = 'Connected';
+// Fade out after 3 seconds
+setTimeout(() => {
+connectionStatus.style.opacity = '0';
+connectionStatus.style.transition = 'opacity 0.5s ease-in-out';
+}, 3000);
+break;
+case 'disconnected':
+connectionStatus.classList.add('disconnected');
+connectionStatus.textContent = 'Disconnected';
+connectionStatus.style.opacity = '1';
+connectionStatus.style.transition = '';
+break;
+case 'connecting':
+connectionStatus.classList.add('reconnecting');
+connectionStatus.textContent = 'Connecting...';
+connectionStatus.style.opacity = '1';
+connectionStatus.style.transition = '';
+break;
+case 'error':
+connectionStatus.classList.add('disconnected');
+connectionStatus.textContent = 'Connection Error';
+connectionStatus.style.opacity = '1';
+connectionStatus.style.transition = '';
+break;
+}
+}
+// Copy share link to clipboard
+function copyShareLink(linkType) {
+// Get the link text
+const linkText = sessionShareLink.href;
+// Use the newer clipboard API if available
+if (navigator.clipboard) {
+navigator.clipboard.writeText(linkText)
+.then(() => {
+showToast('Session link copied to clipboard!', 'success');
+})
+.catch(err => {
+console.error('Could not copy text: ', err);
+showToast('Failed to copy link', 'error');
+});
+} else {
+// Fallback for older browsers
+const textArea = document.createElement('textarea');
+textArea.value = linkText;
+textArea.style.position = 'fixed'; // Avoid scrolling to bottom
+document.body.appendChild(textArea);
+textArea.focus();
+textArea.select();
+try {
+const successful = document.execCommand('copy');
+if (successful) {
+showToast('Session link copied to clipboard!', 'success');
+} else {
+showToast('Failed to copy link', 'error');
+}
+} catch (err) {
+console.error('Could not copy text: ', err);
+showToast('Failed to copy link', 'error');
+}
+document.body.removeChild(textArea);
+}
+}
+// Update stats visibility based on card sequence
+function updateStatsVisibility() {
+if (!resultsSummary) return;
+// Hide stats for T-shirt sizes
+if (state.currentSequence === 'tshirt') {
+resultsSummary.style.display = 'none';
+} else {
+resultsSummary.style.display = '';
+}
+}
+// Update UI elements based on role
+function updateUIForRole() {
+// Show role in header
+if (roleDisplay) {
+roleDisplay.innerHTML = '';
+const roleBadge = document.createElement('span');
+roleBadge.className = `role-info ${state.role}`;
+roleBadge.textContent = state.role === 'observer' ? 'Observer Mode' : 'Player Mode';
+roleDisplay.appendChild(roleBadge);
+}
+// Make sure share link container is always visible for everyone
+if (shareLinksContainer) {
+shareLinksContainer.classList.remove('hidden');
+// Create session share link
+const baseUrl = `${window.location.origin}${window.location.pathname}?room=${state.roomId}`;
+sessionShareLink.href = baseUrl;
+sessionShareLink.textContent = baseUrl;
+}
+// Update sequence selector - now available to all users
+if (sequenceSelector) {
+sequenceSelector.classList.remove('hidden');
+cardSequenceSelect.disabled = false;
+}
+// If observer, hide voting section and adjust buttons
+if (state.role === 'observer') {
+// Disable voting functionality for observers
+submitVoteBtn.disabled = true;
+// Hide the voting area for observers
+if (votingSection) {
+votingSection.style.display = 'none';
+}
+// Enable reveal votes button for observers (they don't need to vote first)
+revealVotesBtn.disabled = false;
+// Show a message about being an observer
+showToast('Observer mode: You can reveal votes but cannot vote', 'info', 8000);
+} else {
+// Show voting section for players
+if (votingSection) {
+votingSection.style.display = '';
+}
+}
+// Update stats visibility based on card sequence
+updateStatsVisibility();
+}
+// Join session
+function joinSession() {
+const name = nameInput.value.trim();
+let roomCode = roomCodeInput.value.trim();
+if (!name) {
+showToast('Please enter your name to join the session', 'warning');
+nameInput.focus();
+return;
+}
+// Generate a room code if not provided
+if (!roomCode) {
+roomCode = generateSessionCode();
+}
+// Set role based on checkbox
+const role = observerRoleCheckbox.checked ? 'observer' : 'player';
+state.username = name;
+state.roomId = roomCode;
+state.role = role;
+// Update URL with room code only (not role) for easy sharing
+let newUrl = `${window.location.origin}${window.location.pathname}?room=${roomCode}`;
+window.history.pushState({ path: newUrl }, '', newUrl);
+// Update room display
+roomCodeDisplay.textContent = `Session Code: ${roomCode}`;
+// Hide join form, show main content
+joinRoomSection.classList.add('hidden');
+mainContent.classList.remove('hidden');
+// Add yourself to participants (will be updated by server)
+state.participants[name] = {
+name,
+hasVoted: false,
+isActive: true,
+role,
+vote: null
+};
+// Update UI immediately
+updateParticipantsList();
+renderCardDeck();
+updateUIForRole();
+// Join the room via Socket.IO
+if (state.connected) {
+socket.emit('join_room', {
+username: name,
+roomId: roomCode,
+role: role
+});
+}
+saveToLocalStorage();
+}
+function handleCardSequenceChange() {
+const newSequence = cardSequenceSelect.value;
+state.currentSequence = newSequence;
+// Update stats visibility based on new sequence
+updateStatsVisibility();
+// Update cards
+renderCardDeck();
+// Broadcast sequence change to other participants
+socket.emit('sequence_changed', {
+roomId: state.roomId,
+sequence: state.currentSequence,
+username: state.username
+});
+saveToLocalStorage();
+}
+function renderCardDeck() {
+cardDeck.innerHTML = '';
+const cards = state.cardSequences[state.currentSequence];
+cards.forEach(card => {
+const cardElement = document.createElement('div');
+cardElement.className = 'card';
+cardElement.textContent = card;
+if (state.selectedCard === card) {
+cardElement.classList.add('selected');
+}
+// Disable card selection for observers
+if (state.role !== 'observer') {
+cardElement.addEventListener('click', () => selectCard(card, cardElement));
+} else {
+cardElement.style.cursor = 'default';
+cardElement.style.opacity = '0.7';
+}
+cardDeck.appendChild(cardElement);
+});
+}
+function selectCard(card, cardElement) {
+if (state.votesRevealed) return;
+if (state.role === 'observer') return; // Observers can't select cards
+// Deselect previous card
+if (state.selectedCard) {
+const previousCard = document.querySelector('.card.selected');
+if (previousCard) {
+previousCard.classList.remove('selected');
+}
+}
+state.selectedCard = card;
+cardElement.classList.add('selected');
+// Add visual feedback
+cardElement.style.animation = 'pulse 0.5s';
+setTimeout(() => {
+cardElement.style.animation = '';
+}, 500);
+submitVoteBtn.disabled = false;
+// Show selection feedback
+const feedbackEl = document.createElement('div');
+feedbackEl.textContent = `You selected: ${card}`;
+feedbackEl.style.textAlign = 'center';
+feedbackEl.style.padding = '0.5rem';
+feedbackEl.style.marginTop = '0.5rem';
+feedbackEl.style.backgroundColor = 'var(--primary-light)';
+feedbackEl.style.color = 'white';
+feedbackEl.style.borderRadius = '4px';
+feedbackEl.style.animation = 'fadeIn 0.3s ease-in-out';
+// Remove previous feedback if exists
+const existingFeedback = document.querySelector('.selection-feedback');
+if (existingFeedback) {
+existingFeedback.remove();
+}
+feedbackEl.className = 'selection-feedback';
+cardDeck.after(feedbackEl);
+}
+function submitVote() {
+if (!state.selectedCard) return;
+if (state.role === 'observer') {
+showToast('Observers cannot vote', 'error');
+return;
+}
+// Update local state
+state.votes[state.username] = state.selectedCard;
+state.participants[state.username].hasVoted = true;
+state.participants[state.username].vote = state.selectedCard;
+// Update UI immediately
+updateParticipantsList();
+updateVotesList();
+// Send vote to server
+socket.emit('vote_submitted', {
+username: state.username,
+roomId: state.roomId,
+vote: state.selectedCard
+});
+submitVoteBtn.disabled = true;
+// Show toast notification
+showToast('Your vote has been submitted!', 'success');
+}
+function revealVotes() {
+// Send reveal votes command to server
+socket.emit('reveal_votes', {
+roomId: state.roomId,
+username: state.username
+});
+}
+function resetVoting() {
+// Tell server to reset voting
+socket.emit('reset_voting', {
+roomId: state.roomId,
+username: state.username
+});
+}
+// CRITICAL FUNCTION FOR PARTICIPANTS LIST DISPLAY
+function updateParticipantsList(highlightName = null) {
+// Clear the container
+participantsList.innerHTML = '';
+// Get participants as an array for sorting
+const participantsArray = Object.values(state.participants);
+// If no participants, show a message
+if (participantsArray.length === 0) {
+const emptyMsg = document.createElement('div');
+emptyMsg.textContent = 'No participants yet. Share the link to invite others!';
+emptyMsg.style.padding = '0.5rem';
+emptyMsg.style.color = 'var(--text-light)';
+participantsList.appendChild(emptyMsg);
+// Update the header count
+const participantsHeader = document.querySelector('.participants-list h3');
+participantsHeader.textContent = 'Participants (0)';
+return;
+}
+// Sort by name
+participantsArray.sort((a, b) => a.name.localeCompare(b.name));
+// Create and append participant elements
+participantsArray.forEach(participant => {
+if (!participant || !participant.name) return;
+const participantEl = document.createElement('div');
+participantEl.className = 'participant';
+// Highlight newly added participants
+if (highlightName && participant.name === highlightName) {
+participantEl.classList.add('participant-enter');
+}
+const userRoleEl = document.createElement('div');
+userRoleEl.className = 'user-role';
+const nameEl = document.createElement('span');
+nameEl.textContent = participant.name + (participant.name === state.username ? ' (You)' : '');
+userRoleEl.appendChild(nameEl);
+// Add observer label if they're an observer
+if (participant.role === 'observer') {
+const observerBadge = document.createElement('span');
+observerBadge.className = 'observer-badge';
+observerBadge.textContent = 'Observer';
+userRoleEl.appendChild(observerBadge);
+}
+// Add vote badge if votes are revealed and they voted
+if (state.votesRevealed && participant.hasVoted && participant.vote && participant.role !== 'observer') {
+const voteBadge = document.createElement('span');
+voteBadge.className = 'participant-vote';
+voteBadge.textContent = participant.vote;
+userRoleEl.appendChild(voteBadge);
+}
+const statusContainer = document.createElement('div');
+statusContainer.className = 'status-indicator';
+const statusDot = document.createElement('div');
+// Observers don't vote, so they're always "ready"
+if (participant.role === 'observer') {
+statusDot.className = 'participant-status voted';
+} else {
+statusDot.className = `participant-status ${participant.hasVoted ? 'voted' : ''}`;
+}
+const statusText = document.createElement('span');
+// Different status text for observers
+if (participant.role === 'observer') {
+statusText.textContent = 'Observer';
+} else {
+statusText.textContent = participant.hasVoted ? 'Voted' : 'Not voted';
+}
+statusContainer.appendChild(statusDot);
+statusContainer.appendChild(statusText);
+participantEl.appendChild(userRoleEl);
+participantEl.appendChild(statusContainer);
+participantsList.appendChild(participantEl);
+});
+// Update the header count
+const participantsHeader = document.querySelector('.participants-list h3');
+participantsHeader.textContent = `Participants (${participantsArray.length})`;
+}
+function checkAllVoted() {
+// Count only players (not observers) when checking if all voted
+const players = Object.values(state.participants).filter(p => p.role !== 'observer');
+// If no players, disable reveal button
+if (players.length === 0) {
+revealVotesBtn.disabled = true;
+return;
+}
+// For observers, enable reveal votes button anyway
+if (state.role === 'observer') {
+revealVotesBtn.disabled = false;
+return;
+}
+// For players, check if all players have voted
+const allVoted = players.every(p => p.hasVoted);
+revealVotesBtn.disabled = !allVoted;
+if (allVoted && players.length > 1) {
+showToast('Everyone has voted! You can now reveal the votes.', 'info');
+}
+}
+function updateVotesList() {
+// Clear the list
+votesList.innerHTML = '';
+// Sort voters by name
+const sortedVoters = Object.keys(state.votes).sort();
+sortedVoters.forEach(name => {
+const vote = state.votes[name];
+const voteCard = document.createElement('div');
+voteCard.className = 'vote-card';
+const valueEl = document.createElement('div');
+valueEl.className = 'value';
+// Show ? or actual vote based on revealed state
+if (!state.votesRevealed) {
+valueEl.textContent = '?';
+valueEl.style.color = 'var(--text-light)';
+} else {
+valueEl.textContent = vote;
+valueEl.style.color = 'var(--primary)';
+// Animate the reveal
+voteCard.style.animation = 'flipIn 0.5s ease-in-out';
+}
+const nameEl = document.createElement('div');
+nameEl.className = 'name';
+nameEl.textContent = name;
+voteCard.appendChild(valueEl);
+voteCard.appendChild(nameEl);
+votesList.appendChild(voteCard);
+});
+// Update vote count in the results header
+const voteCount = Object.keys(state.votes).length;
+const votesHeader = document.querySelector('.results h4');
+votesHeader.textContent = `Individual Votes (${voteCount})`;
+// If no votes yet, show a message
+if (voteCount === 0) {
+const noVotesMsg = document.createElement('div');
+noVotesMsg.textContent = 'No votes yet. Select a card and submit your vote.';
+noVotesMsg.style.textAlign = 'center';
+noVotesMsg.style.padding = '1rem';
+noVotesMsg.style.color = 'var(--text-light)';
+votesList.appendChild(noVotesMsg);
+}
+}
+function calculateStats() {
+const votes = Object.values(state.votes).filter(v => v !== '?');
+if (votes.length === 0) {
+averageValueEl.textContent = '-';
+medianValueEl.textContent = '-';
+modeValueEl.textContent = '-';
+return;
+}
+// Don't calculate stats for T-shirt sizes
+if (state.currentSequence === 'tshirt') {
+return;
+}
+// Animate stats when they're calculated
+document.querySelectorAll('.result-item .value').forEach(el => {
+el.style.animation = 'flipIn 0.5s ease-in-out';
+});
+// For numeric values
+const numericVotes = votes.map(v => {
+if (v === '½') return 0.5;
+return parseFloat(v);
+}).filter(v => !isNaN(v));
+if (numericVotes.length === 0) {
+averageValueEl.textContent = '-';
+medianValueEl.textContent = '-';
+modeValueEl.textContent = '-';
+return;
+}
+// Average
+const sum = numericVotes.reduce((a, b) => a + b, 0);
+const avg = sum / numericVotes.length;
+averageValueEl.textContent = avg.toFixed(1);
+// Median
+numericVotes.sort((a, b) => a - b);
+let median;
+const mid = Math.floor(numericVotes.length / 2);
+median = numericVotes.length % 2 === 0 ?
+(numericVotes[mid - 1] + numericVotes[mid]) / 2 :
+numericVotes[mid];
+medianValueEl.textContent = median.toString().replace('.0', '');
+// Mode (most common)
+const counts = votes.reduce((acc, vote) => {
+acc[vote] = (acc[vote] || 0) + 1;
+return acc;
+}, {});
+let maxCount = 0;
+let mode = '-';
+for (const [vote, count] of Object.entries(counts)) {
+if (count > maxCount) {
+maxCount = count;
+mode = vote;
+}
+}
+modeValueEl.textContent = mode;
+}
+
+// Function to check for consensus and celebrate with confetti
+function checkConsensusAndCelebrate() {
+    // Only proceed if votes are revealed and we're in T-shirt size mode
+    if (!state.votesRevealed || state.currentSequence !== 'tshirt') return;
+    
+    // Get all votes (excluding observers who don't vote)
+    const votes = [];
+    for (const username in state.votes) {
+        // Only count votes that aren't null or undefined or "?"
+        if (state.votes[username] && state.votes[username] !== '?') {
+            votes.push(state.votes[username]);
+        }
+    }
+    
+    // Need at least 2 votes to consider consensus
+    if (votes.length < 2) return;
+    
+    // Check if all votes are the same
+    const firstVote = votes[0];
+    const allSame = votes.every(vote => vote === firstVote);
+    
+    if (allSame) {
+        // Trigger confetti celebration
+        celebrateWithConfetti();
+        // Show a celebratory message
+        showToast(`🎉 Perfect consensus! Everyone voted for ${firstVote}!`, 'success', 8000);
+    }
+}
+
+// Function to display confetti animation
+function celebrateWithConfetti() {
+    // Check if confetti is available
+    if (typeof window.confetti === 'undefined') {
+        console.error('Confetti library not loaded');
+        // Try to load the confetti library again
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js';
+        script.onload = () => {
+            console.log('Confetti library loaded dynamically');
+            // Now that it's loaded, run the confetti
+            runConfettiAnimation();
+        };
+        script.onerror = () => {
+            console.error('Failed to load confetti library dynamically');
+        };
+        document.head.appendChild(script);
+        return;
+    }
+    
+    runConfettiAnimation();
+}
+
+// Separate function to run the actual confetti animation
+function runConfettiAnimation() {
+    // Configure and trigger the confetti
+    const duration = 0.5 * 1000;
+    const end = Date.now() + duration;
+    
+    // Create a confetti cannon effect
+    const frame = () => {
+        if (typeof window.confetti === 'function') {
+            window.confetti({
+                particleCount: 2,
+                angle: 60,
+                spread: 55,
+                origin: { x: 0 },
+                colors: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6']
+            });
+            window.confetti({
+                particleCount: 2,
+                angle: 120,
+                spread: 55,
+                origin: { x: 1 },
+                colors: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6']
+            });
+            
+            if (Date.now() < end) {
+                requestAnimationFrame(frame);
+            }
+        }
+    };
+    
+    // Start the animation
+    frame();
+    
+    // Add a big burst of confetti at the start
+    if (typeof window.confetti === 'function') {
+        window.confetti({
+            particleCount: 100,
+            spread: 70,
+            origin: { y: 0.6 }
+        });
+    }
+}
+
+// Show toast notification
+function showToast(message, type = 'info', duration = 5000) {
+const toastContainer = document.getElementById('toastContainer');
+const toast = document.createElement('div');
+toast.className = `toast ${type}`;
+const toastHeader = document.createElement('div');
+toastHeader.className = 'toast-header';
+const title = document.createElement('span');
+title.className = 'toast-title';
+title.textContent = type.charAt(0).toUpperCase() + type.slice(1);
+const closeBtn = document.createElement('button');
+closeBtn.className = 'toast-close';
+closeBtn.innerHTML = '&times;';
+closeBtn.addEventListener('click', () => {
+toast.style.animation = 'fadeOut 0.3s';
+setTimeout(() => toast.remove(), 300);
+});
+toastHeader.appendChild(title);
+toastHeader.appendChild(closeBtn);
+const toastBody = document.createElement('div');
+toastBody.className = 'toast-body';
+toastBody.textContent = message;
+toast.appendChild(toastHeader);
+toast.appendChild(toastBody);
+toastContainer.appendChild(toast);
+// Auto remove after duration
+setTimeout(() => {
+if (toast.parentNode) {
+toast.style.animation = 'fadeOut 0.3s';
+setTimeout(() => toast.remove(), 300);
+}
+}, duration);
+}
+// Generate a random session code
+function generateSessionCode() {
+const characters = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Removed easily confused characters
+let result = '';
+const length = 6;
+for (let i = 0; i < length; i++) {
+result += characters.charAt(Math.floor(Math.random() * characters.length));
+}
+return result;
+}
+function saveToLocalStorage() {
+localStorage.setItem('scrumPokerState', JSON.stringify({
+username: state.username,
+roomId: state.roomId,
+currentSequence: state.currentSequence,
+role: state.role
+}));
+}
+function loadFromLocalStorage() {
+const savedState = localStorage.getItem('scrumPokerState');
+if (savedState) {
+const parsed = JSON.parse(savedState);
+// Restore only persistent data
+if (parsed.username) {
+state.username = parsed.username;
+nameInput.value = parsed.username;
+}
+if (parsed.roomId) {
+roomCodeInput.value = parsed.roomId;
+}
+if (parsed.currentSequence) {
+state.currentSequence = parsed.currentSequence;
+cardSequenceSelect.value = parsed.currentSequence;
+}
+if (parsed.role) {
+state.role = parsed.role;
+observerRoleCheckbox.checked = parsed.role === 'observer';
+}
+}
+}
+// Add keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+// Enter key on join screen submits the form
+if (e.key === 'Enter' && !joinRoomSection.classList.contains('hidden') && nameInput.value) {
+joinSession();
+}
+});
+// Clean up when leaving
+window.addEventListener('beforeunload', function() {
+// Notify others that you're leaving
+if (state.username && state.roomId && state.connected) {
+socket.emit('leave_room', {
+username: state.username,
+roomId: state.roomId
+});
+}
+});
+});
+        </script>
+    </body>
+</html>
