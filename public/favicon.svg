@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Circle background in white -->
+  <circle cx="16" cy="16" r="14" fill="white" stroke="#e0dee3" stroke-width="1"/>
+  
+  <!-- Spades symbol in Tako F300 magenta -->
+  <path d="M16,5 C12,11 8,13 8,17 C8,19.5 10,22 13,22 C14,22 15,21.5 16,20.5 C17,21.5 18,22 19,22 C22,22 24,19.5 24,17 C24,13 20,11 16,5 Z" fill="#ec4ff2"/>
+  
+  <!-- Stem of the spade -->
+  <rect x="15" y="21" width="2" height="6" fill="#ec4ff2"/>
+  
+  <!-- Base of the spade -->
+  <path d="M13,26 C13,27.5 14.5,27.5 16,27.5 C17.5,27.5 19,27.5 19,26 L19,25 L13,25 Z" fill="#ec4ff2"/>
+</svg>

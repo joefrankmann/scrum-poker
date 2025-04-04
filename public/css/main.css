@@ -1,0 +1,346 @@
+:root {
+    /* Tako Color Tokens */
+
+    /* Text Colors */
+    --text-primary: #1e0d35;
+    /* N900 - primary text */
+    --text-secondary: #594e69;
+    /* N500 - secondary text */
+    --text-hyperlink: #721ce3;
+    /* P300 - hyperlink text */
+    --text-invert: #fafafa;
+    /* N10 - inverted text */
+    --text-highlight-background: #ffd888;
+    /* O100 - text highlight */
+
+    /* Icon Colors */
+    --icon-neutral: #483760;
+    /* N600 - default icons */
+    --icon-success: #1e7b44;
+    /* G500 - success icons */
+    --icon-warning: #cc8900;
+    /* O400 - warning icons */
+    --icon-danger: #de0013;
+    /* R400 - danger icons */
+    --icon-info: #098cc4;
+    /* B400 - info icons */
+    --icon-primary: #721ce3;
+    /* P300 - primary icons */
+
+    /* Border Colors */
+    --border-neutral: #e0dee3;
+    /* N30 - default borders */
+    --border-primary: #721ce3;
+    /* P300 - primary/selected borders */
+    --border-success: #34cd71;
+    /* G300 - success borders */
+    --border-warning: #e59a00;
+    /* O300 - warning borders */
+    --border-danger: #de0013;
+    /* R400 - danger borders */
+    --border-focus: #ec4ff2;
+    /* F300 - focus state borders */
+
+    /* Surface Colors */
+    --surface-primary: #fafafa;
+    /* N10 - primary background */
+    --surface-secondary: #1e0d35;
+    /* N900 - secondary background */
+    --surface-card-primary: #ffffff;
+    /* N0 - primary card background */
+    --surface-card-secondary: #fafafa;
+    /* N10 - secondary card background */
+    --surface-highlight: #fff4dd;
+    /* O50 - highlight background */
+
+    /* State Colors */
+    --state-primary: #721ce3;
+    /* P300 - primary actions */
+    --state-accent: #ec4ff2;
+    /* F300 - accent actions */
+    --state-hover-neutral: #f2f2f4;
+    /* N15 - hover states */
+    --state-disabled-neutral: #e9e9ec;
+    /* N20 - disabled states */
+
+    /* Backward compatibility mapping */
+    --primary: var(--state-primary);
+    --primary-light: var(--text-hyperlink);
+    --primary-dark: #5a16b6;
+    /* Darker version of P300 */
+    --background: var(--surface-primary);
+    --card-bg: var(--surface-card-primary);
+    --text: var(--text-primary);
+    --text-light: var(--text-secondary);
+    --border: var(--border-neutral);
+    --success: var(--icon-success);
+    --warning: var(--icon-warning);
+    --danger: var(--icon-danger);
+    --observer: var(--state-accent);
+    /* Used for observer role styling */
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+}
+
+body {
+    background-color: var(--background);
+    color: var(--text);
+    line-height: 1.6;
+    padding: 1rem;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-neutral);
+}
+
+h1 {
+    font-size: 2rem;
+    color: var(--state-primary);
+    margin-bottom: 0.5rem;
+}
+
+.subtitle {
+    color: var(--text-secondary);
+    font-size: 1rem;
+}
+
+.voting-area {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+.hidden {
+    display: none;
+}
+
+/* Room join screen */
+.join-container {
+    max-width: 500px;
+    margin: 0 auto;
+    padding: 2rem;
+    background-color: var(--card-bg);
+    border-radius: 8px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    animation: fadeIn 0.5s;
+}
+
+.join-container h2 {
+    color: var(--primary);
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.join-container .room-info {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background-color: var(--background);
+    border-radius: 4px;
+    border-left: 4px solid var(--primary);
+}
+
+.input-group {
+    margin-bottom: 1.5rem;
+}
+
+.input-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+.input-group input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+/* Gray out session code input to make it look more optional */
+.input-group.optional label {
+    color: var(--text-light);
+}
+
+.input-group.optional input {
+    background-color: #f9fafb;
+    border-color: #e5e7eb;
+}
+
+/* Checkbox styles */
+.checkbox-group {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.checkbox-group input[type="checkbox"] {
+    width: auto;
+    margin-right: 0.5rem;
+}
+
+/* Toast notifications */
+.toast-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000;
+}
+
+.toast {
+    padding: 1rem;
+    margin-bottom: 0.5rem;
+    background-color: white;
+    border-radius: 4px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    max-width: 300px;
+}
+
+.toast.info {
+    border-left: 4px solid var(--icon-info);
+}
+
+.toast.success {
+    border-left: 4px solid var(--border-success);
+}
+
+.toast.warning {
+    border-left: 4px solid var(--border-warning);
+}
+
+.toast.error {
+    border-left: 4px solid var(--border-danger);
+}
+
+.toast-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.toast-title {
+    font-weight: 500;
+}
+
+.toast-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.2rem;
+    color: var(--text-light);
+    padding: 0;
+}
+
+/* Sequence selector */
+.sequence-selector {
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.sequence-selector select {
+    padding: 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    margin-left: 0.5rem;
+    font-size: 1rem;
+}
+
+/* Room code display */
+.room-code {
+    font-weight: bold;
+    font-size: 1.5rem;
+    color: var(--state-primary);
+    text-align: center;
+    margin-bottom: 1rem;
+    background-color: var(--surface-primary);
+    padding: 0.5rem;
+    border-radius: 4px;
+}
+
+/* Share links section */
+.share-links {
+    text-align: center;
+    margin-top: 2rem;
+    padding: 1rem;
+    background-color: var(--surface-primary);
+    border-radius: 8px;
+}
+
+.share-links h4 {
+    margin-bottom: 0.5rem;
+    color: var(--state-primary);
+}
+
+.share-link {
+    margin-bottom: 0.5rem;
+}
+
+.share-link a {
+    color: var(--text-hyperlink);
+    text-decoration: none;
+    word-break: break-all;
+}
+
+/* Connection status */
+.connection-status {
+    position: fixed;
+    bottom: 10px;
+    left: 10px;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    z-index: 1000;
+}
+
+.connection-status.connected {
+    background-color: var(--border-success);
+    color: var(--text-invert);
+}
+
+.connection-status.disconnected {
+    background-color: var(--border-danger);
+    color: var(--text-invert);
+}
+
+.connection-status.reconnecting {
+    background-color: var(--border-warning);
+    color: var(--text-invert);
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+    .card {
+        width: 60px;
+        height: 90px;
+        font-size: 1.25rem;
+    }
+
+    .controls {
+        flex-direction: column;
+    }
+
+    button {
+        width: 100%;
+    }
+}
