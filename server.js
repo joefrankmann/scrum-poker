@@ -38,7 +38,7 @@ io.on('connection', (socket) => {
         participants: {},
         votes: {},
         votesRevealed: false,
-        cardSequence: 'fibonacci'
+        cardSequence: 'tshirt'
       };
     }
     
