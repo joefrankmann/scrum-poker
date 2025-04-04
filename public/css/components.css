@@ -1,0 +1,317 @@
+/* New participant animation */
+.participant-enter {
+    background-color: rgba(52, 205, 113, 0.1);
+    /* Light green highlight from Tako G300 */
+    animation: fadeHighlight 2s ease-out;
+}
+
+/* Card styles */
+.card-deck {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: center;
+}
+
+.card {
+    width: 80px;
+    height: 120px;
+    background-color: var(--surface-card-primary);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s, box-shadow 0.2s;
+    border: 2px solid var(--border-neutral);
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.15);
+    background-color: var(--state-hover-neutral);
+}
+
+.card.selected {
+    border-color: var(--border-primary);
+    transform: translateY(-5px);
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.15);
+    background-color: var(--state-primary);
+    color: var(--text-invert);
+}
+
+/* Button styles */
+.controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: center;
+    margin-bottom: 2rem;
+}
+
+button {
+    padding: 0.75rem 1.5rem;
+    background-color: var(--state-primary);
+    color: var(--text-invert);
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background-color 0.2s;
+}
+
+button:hover {
+    background-color: var(--primary-dark);
+}
+
+button:disabled {
+    background-color: var(--state-disabled-neutral);
+    color: var(--text-secondary);
+    cursor: not-allowed;
+}
+
+button.secondary {
+    background-color: var(--surface-primary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-neutral);
+}
+
+button.secondary:hover {
+    background-color: var(--state-hover-neutral);
+}
+
+.join-btn {
+    width: 100%;
+    padding: 0.75rem;
+    background-color: var(--state-primary);
+    color: var(--text-invert);
+    font-size: 1rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.join-btn:hover {
+    background-color: var(--primary-dark);
+}
+
+.copy-btn {
+    background-color: var(--surface-primary);
+    border: 1px solid var(--border-neutral);
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.875rem;
+    margin-left: 0.5rem;
+}
+
+.copy-btn:hover {
+    background-color: var(--state-hover-neutral);
+}
+
+/* Results area styles */
+.results {
+    padding: 1rem;
+    background-color: var(--surface-card-primary);
+    border-radius: 8px;
+    margin-bottom: 2rem;
+    border: 1px solid var(--border-neutral);
+}
+
+.results h3 {
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-neutral);
+    color: var(--text-primary);
+}
+
+.results-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem;
+    margin-bottom: 1rem;
+    justify-content: space-around;
+}
+
+.result-item {
+    text-align: center;
+}
+
+.result-item .value {
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--state-primary);
+}
+
+.result-item .label {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.votes-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.vote-card {
+    background-color: var(--surface-primary);
+    padding: 1rem;
+    border-radius: 4px;
+    text-align: center;
+    min-width: 100px;
+}
+
+.vote-card .value {
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.vote-card .name {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+/* Vote distribution bar */
+.vote-distribution {
+    margin-top: 1.5rem;
+}
+
+.distribution-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.distribution-card {
+    width: 2.5rem;
+    background-color: var(--state-primary);
+    color: var(--text-invert);
+    padding: 0.25rem;
+    border-radius: 4px;
+    font-weight: bold;
+    text-align: center;
+    margin-right: 0.5rem;
+}
+
+.distribution-count {
+    font-weight: bold;
+    margin-right: 0.5rem;
+    color: var(--text-primary);
+}
+
+.distribution-bar {
+    height: 1rem;
+    background-color: var(--state-primary);
+    border-radius: 4px;
+    opacity: 0.8;
+    min-width: 2rem;
+}
+
+/* Participants list styles */
+.participants-list {
+    margin-top: 1rem;
+    padding: 1rem;
+    background-color: var(--surface-card-primary);
+    border-radius: 8px;
+    border: 1px solid var(--border-neutral);
+}
+
+.participants-list h3 {
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+}
+
+.participant {
+    padding: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border-neutral);
+    color: var(--text-primary);
+}
+
+.participant:last-child {
+    border-bottom: none;
+}
+
+.participant-status {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: var(--border-danger);
+    margin-right: 1rem;
+}
+
+.participant-status.voted {
+    background-color: var(--border-success);
+}
+
+.status-indicator {
+    display: flex;
+    align-items: center;
+}
+
+/* Participant vote badge */
+.participant-vote {
+    background-color: var(--state-primary);
+    color: var(--text-invert);
+    font-size: 0.8rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    margin-left: 0.5rem;
+}
+
+/* Observer badge styles */
+.observer-badge {
+    background-color: var(--state-accent);
+    color: var(--text-invert);
+    font-size: 0.7rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 9999px;
+    margin-left: 0.5rem;
+    text-transform: uppercase;
+    font-weight: bold;
+}
+
+.user-role {
+    display: flex;
+    align-items: center;
+}
+
+/* Player badge - only shown when observer is present */
+.player-badge {
+    background-color: var(--state-primary);
+    color: var(--text-invert);
+    font-size: 0.7rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 9999px;
+    margin-left: 0.5rem;
+    text-transform: uppercase;
+    font-weight: bold;
+}
+
+/* Role info in header */
+.role-info {
+    margin-top: 0.5rem;
+    display: inline-block;
+    padding: 0.2rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.role-info.observer {
+    background-color: var(--state-accent);
+    color: var(--text-invert);
+}
+
+.role-info.player {
+    background-color: var(--state-primary);
+    color: var(--text-invert);
+}
