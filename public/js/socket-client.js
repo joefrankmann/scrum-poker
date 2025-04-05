@@ -245,7 +245,6 @@ function handleVotingReset(data) {
       participantsList.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 100);
   }
-}
 
 /**
  * Handle sequence changed event
