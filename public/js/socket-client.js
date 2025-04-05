@@ -188,6 +188,14 @@ function handleVotesRevealed(data) {
   if (appState.currentSequence === 'tshirt') {
     checkConsensusAndCelebrate();
   }
+  
+  // Scroll to results area
+  const resultsArea = document.getElementById('resultsArea');
+  if (resultsArea) {
+    setTimeout(() => {
+      resultsArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  }
 }
 
 /**
@@ -229,7 +237,14 @@ function handleVotingReset(data) {
   if (existingFeedback) {
     existingFeedback.remove();
   }
-}
+  
+  // Scroll back to the participants list
+  const participantsList = document.getElementById('participants').closest('.participants-list');
+  if (participantsList) {
+    setTimeout(() => {
+      participantsList.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  }
 
 /**
  * Handle sequence changed event

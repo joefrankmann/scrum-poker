@@ -166,6 +166,14 @@ function submitVote() {
 function revealVotes() {
   // Send reveal votes command to server
   emitRevealVotes();
+  
+  // Scroll to results area
+  const resultsArea = document.getElementById('resultsArea');
+  if (resultsArea) {
+    setTimeout(() => {
+      resultsArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  }
 }
 
 /**
@@ -174,6 +182,14 @@ function revealVotes() {
 function resetVoting() {
   // Tell server to reset voting
   emitResetVoting();
+  
+  // Scroll back to the participants list
+  const participantsList = document.getElementById('participants').closest('.participants-list');
+  if (participantsList) {
+    setTimeout(() => {
+      participantsList.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  }
 }
 
 /**
