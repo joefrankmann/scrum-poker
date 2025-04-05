@@ -48,6 +48,38 @@ Try it now at: [https://sakura-lively-yamamomo.glitch.me](https://sakura-lively-
 
 4. Open your browser and navigate to `http://localhost:3000`
 
+## 🌳 File Structure
+```
+scrum-poker/
+├── public/                  # Static assets served to the client
+│   ├── css/
+│   │   ├── main.css         # Main stylesheet
+│   │   ├── components.css   # Component-specific styles
+│   │   └── animations.css   # CSS animations
+│   ├── js/
+│   │   ├── app.js           # Main application initialization
+│   │   ├── ui.js            # UI-specific functions
+│   │   ├── socket-client.js # Socket.IO client interactions
+│   │   ├── state.js         # State management
+│   │   ├── components/      # UI components
+│   │   │   ├── cards.js     # Card deck rendering & interactions
+│   │   │   ├── participants.js # Participants list management
+│   │   │   ├── toast.js     # Toast notification system
+│   │   │   └── results.js   # Voting results display
+│   │   └── utils/           # Utility functions
+│   │       ├── storage.js   # Local storage operations
+│   │       ├── confetti.js  # Confetti animation utilities
+│   │       └── session.js   # Session management utilities
+│   └── index.html           # Main HTML file
+│
+└── server/                  # Server-side code
+    ├── server.js            # Main server entry point
+    ├── socket-handlers.js   # Socket.IO event handlers
+    └── room-manager.js      # Room management logic
+
+```
+
+
 ## 📋 How to Use
 
 1. **Creating or Joining a Session**:
